@@ -14,29 +14,25 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+    void initUI();
 
 private slots:
     void digitClicked();
     void operatorClicked();
     void equalClicked();
     void clearClicked();
-    void clearAllClicked();
     void pointClicked();
     void parenthesisClicked();
     void backspaceClicked();
-    void updatePreview(const QString &newInput);
-    double evaluateExpression(const QString &expression);
+    void percentClicked();
+    double evaluateExpression(QString exp);
 
 private:
     QLineEdit *display;
     QLineEdit *previewDisplay;
     QVector<QPushButton*> digitButtons;
     QPushButton *createButton(const QString &text, void (MainWindow::*member)());
-    // void calculate(double operand);
 
-    double result;
-    QString pendingOperator;
-    bool waitingForOperand;
     QString currentExpression;
 };
 #endif // MAINWINDOW_H
