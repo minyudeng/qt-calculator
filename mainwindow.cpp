@@ -65,9 +65,9 @@ void MainWindow::initUI()
     buttonMap["."] = pointButton;
     buttonMap["="] = equalButton;
     buttonMap["%"] = percentButton;
-    buttonMap["\r"] = equalButton; // Enter key
-    buttonMap["\u001B"] = clearButton;  // Escape key
-    buttonMap["\b"] = backspaceButton;  // Backspace key
+    buttonMap["\r"] = equalButton;     // Enter key
+    buttonMap["\u001B"] = clearButton; // Escape key
+    buttonMap["\b"] = backspaceButton; // Backspace key
 
     // 创建布局
     QGridLayout *mainLayout = new QGridLayout(centralWidget);
@@ -126,8 +126,6 @@ void MainWindow::initUI()
         }
         button->setMinimumSize(60, 60);
     }
-
-
 
     setWindowTitle(tr("DMY Calculator - Advanced"));
     resize(400, 500);
@@ -380,7 +378,7 @@ double MainWindow::calculatePostfix(QString postfix)
             }
             else
             {
-                return 0; 
+                return 0;
             }
         }
         else if (token == "+" || token == "-" || token == "*" || token == "/") // 如果是操作符
@@ -418,7 +416,6 @@ double MainWindow::calculatePostfix(QString postfix)
         return 0;
         display->setText("Error");
     }
-    
 
     return stack.pop();
 }
@@ -427,8 +424,8 @@ void MainWindow::keyReleaseEvent(QKeyEvent *event)
 {
     QString key = event->text();
     qDebug() << "Key Released:" << key;
-    if (buttonMap.contains(key)){
-        buttonMap.value(key)->click();
+    if (buttonMap.contains(key))
+    {
+        buttonMap.value(key)->animateClick();
     }
-    
 }
