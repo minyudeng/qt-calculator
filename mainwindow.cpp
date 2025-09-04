@@ -39,7 +39,7 @@ void MainWindow::initUI()
     for (int i = 0; i < 10; ++i)
     {
         digitButtons.append(createButton(QString::number(i), &MainWindow::digitClicked));
-        buttonMap[QString::number(i)] = digitButtons[i];
+        buttonMap[Qt::Key_0 + i] = digitButtons[i];
     }
 
     // 创建操作符按钮
@@ -56,18 +56,18 @@ void MainWindow::initUI()
     QPushButton *percentButton = createButton("%", &MainWindow::percentClicked);
 
     // 将按钮添加到按钮映射中
-    buttonMap["+"] = plusButton;
-    buttonMap["-"] = minusButton;
-    buttonMap["*"] = multiplyButton;
-    buttonMap["/"] = divideButton;
-    buttonMap["("] = leftParenButton;
-    buttonMap[")"] = rightParenButton;
-    buttonMap["."] = pointButton;
-    buttonMap["="] = equalButton;
-    buttonMap["%"] = percentButton;
-    buttonMap["\r"] = equalButton;     // Enter key
-    buttonMap["\u001B"] = clearButton; // Escape key
-    buttonMap["\b"] = backspaceButton; // Backspace key
+    buttonMap[Qt::Key_Plus] = plusButton;
+    buttonMap[Qt::Key_Minus] = minusButton;
+    buttonMap[Qt::Key_Asterisk] = multiplyButton;
+    buttonMap[Qt::Key_Slash] = divideButton;
+    buttonMap[Qt::Key_ParenLeft] = leftParenButton;
+    buttonMap[Qt::Key_ParenRight] = rightParenButton;
+    buttonMap[Qt::Key_Period] = pointButton;
+    buttonMap[Qt::Key_Equal] = equalButton;
+    buttonMap[Qt::Key_Percent] = percentButton;
+    buttonMap[Qt::Key_Enter] = equalButton;    
+    buttonMap[Qt::Key_Escape] = clearButton; 
+    buttonMap[Qt::Key_Backspace] = backspaceButton; 
 
     // 创建布局
     QGridLayout *mainLayout = new QGridLayout(centralWidget);
@@ -422,10 +422,11 @@ double MainWindow::calculatePostfix(QString postfix)
 
 void MainWindow::keyReleaseEvent(QKeyEvent *event)
 {
-    QString key = event->text();
+    QString keyText = event->text();
+    qDebug() << "KeyText Released:" << keyText;
+    int key = event->key();
     qDebug() << "Key Released:" << key;
-    if (buttonMap.contains(key))
-    {
-        buttonMap.value(key)->animateClick();
+    if (buttonMap.contains(key)) {
+        buttonMap[key]->animateClick();
     }
 }

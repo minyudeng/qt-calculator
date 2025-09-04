@@ -37,7 +37,7 @@ private:
     int precedence(QChar op);
     double calculatePostfix(QString postfix);
     QString currentExpression;
-    QHash<QString, QPushButton*> buttonMap;
+    QHash<int, QPushButton*> buttonMap;
 
     QLineEdit *display;
     QLineEdit *previewDisplay;
