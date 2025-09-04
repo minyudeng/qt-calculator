@@ -64,6 +64,7 @@ void MainWindow::initUI()
     buttonMap[Qt::Key_ParenRight] = rightParenButton;
     buttonMap[Qt::Key_Period] = pointButton;
     buttonMap[Qt::Key_Equal] = equalButton;
+    buttonMap[Qt::Key_Return] = equalButton;
     buttonMap[Qt::Key_Percent] = percentButton;
     buttonMap[Qt::Key_Enter] = equalButton;    
     buttonMap[Qt::Key_Escape] = clearButton; 
@@ -243,7 +244,7 @@ void MainWindow::parenthesisClicked()
     {
         currentExpression += parenthesis;
     }
-    equalClicked();
+    previewDisplay->setText(currentExpression);
 }
 
 // 退格按钮点击处理
@@ -347,7 +348,7 @@ QString MainWindow::convert2Postfix(QString infix)
                 postfix += ' ';
                 postfix += stack.pop();
             }
-            stack.pop(); // Remove '('
+            stack.pop(); // 弹出左括号
         }
     }
 
@@ -423,8 +424,8 @@ double MainWindow::calculatePostfix(QString postfix)
 void MainWindow::keyReleaseEvent(QKeyEvent *event)
 {
     QString keyText = event->text();
+     int key = event->key();
     qDebug() << "KeyText Released:" << keyText;
-    int key = event->key();
     qDebug() << "Key Released:" << key;
     if (buttonMap.contains(key)) {
         buttonMap[key]->animateClick();
