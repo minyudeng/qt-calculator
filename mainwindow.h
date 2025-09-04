@@ -6,6 +6,8 @@
 #include <QPushButton>
 #include <QVector>
 #include <QString>
+#include <QHash>
+#include <QKeyEvent>
 
 class MainWindow : public QMainWindow
 {
@@ -16,6 +18,10 @@ public:
     ~MainWindow();
     void initUI();
 
+protected:
+    // void keyPressEvent(QKeyEvent *event) override;
+    void keyReleaseEvent(QKeyEvent *event) override;
+
 private slots:
     void digitClicked();
     void operatorClicked();
@@ -25,14 +31,17 @@ private slots:
     void parenthesisClicked();
     void backspaceClicked();
     void percentClicked();
-    double evaluateExpression(QString exp);
 
 private:
+    QString convert2Postfix(QString infix);
+    int precedence(QChar op);
+    double calculatePostfix(QString postfix);
+    QString currentExpression;
+    QHash<QString, QPushButton*> buttonMap;
+
     QLineEdit *display;
     QLineEdit *previewDisplay;
     QVector<QPushButton*> digitButtons;
     QPushButton *createButton(const QString &text, void (MainWindow::*member)());
-
-    QString currentExpression;
 };
 #endif // MAINWINDOW_H

@@ -4,18 +4,19 @@
 #include <QFont>
 #include <QRegularExpression>
 #include <QStack>
+#include <QStringList>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), currentExpression("0")
 {
-   initUI();
+    initUI();
 }
 
-MainWindow::~MainWindow(){}
+MainWindow::~MainWindow() {}
 
 void MainWindow::initUI()
 {
-     // 创建中心部件
+    // 创建中心部件
     QWidget *centralWidget = new QWidget(this);
     setCentralWidget(centralWidget);
 
@@ -38,6 +39,7 @@ void MainWindow::initUI()
     for (int i = 0; i < 10; ++i)
     {
         digitButtons.append(createButton(QString::number(i), &MainWindow::digitClicked));
+        buttonMap[QString::number(i)] = digitButtons[i];
     }
 
     // 创建操作符按钮
@@ -52,6 +54,20 @@ void MainWindow::initUI()
     QPushButton *rightParenButton = createButton(")", &MainWindow::parenthesisClicked);
     QPushButton *backspaceButton = createButton("⌫", &MainWindow::backspaceClicked);
     QPushButton *percentButton = createButton("%", &MainWindow::percentClicked);
+
+    // 将按钮添加到按钮映射中
+    buttonMap["+"] = plusButton;
+    buttonMap["-"] = minusButton;
+    buttonMap["*"] = multiplyButton;
+    buttonMap["/"] = divideButton;
+    buttonMap["("] = leftParenButton;
+    buttonMap[")"] = rightParenButton;
+    buttonMap["."] = pointButton;
+    buttonMap["="] = equalButton;
+    buttonMap["%"] = percentButton;
+    buttonMap["\r"] = equalButton; // Enter key
+    buttonMap["\u001B"] = clearButton;  // Escape key
+    buttonMap["\b"] = backspaceButton;  // Backspace key
 
     // 创建布局
     QGridLayout *mainLayout = new QGridLayout(centralWidget);
@@ -100,8 +116,7 @@ void MainWindow::initUI()
         {
             button->setStyleSheet(equalStyle);
         }
-        else if (text == "+" || text == "-" || text == "×" || text == "÷" 
-            || text == "AC" || text == "⌫" || text == "%")
+        else if (text == "+" || text == "-" || text == "×" || text == "÷" || text == "AC" || text == "⌫" || text == "%")
         {
             button->setStyleSheet(operatorStyle);
         }
@@ -111,6 +126,8 @@ void MainWindow::initUI()
         }
         button->setMinimumSize(60, 60);
     }
+
+
 
     setWindowTitle(tr("DMY Calculator - Advanced"));
     resize(400, 500);
@@ -197,13 +214,17 @@ void MainWindow::clearClicked()
 // 小数点按钮点击处理
 void MainWindow::pointClicked()
 {
-
-    display->setText("0");
-
-    if (!display->text().contains('.'))
+    // 如果表达式以操作符或左括号结尾
+    if (currentExpression == "0")
     {
-        display->setText(display->text() + ".");
+        currentExpression = "0.";
     }
+    else if (!currentExpression.endsWith('.'))
+    {
+        currentExpression += ".";
+    }
+
+    previewDisplay->setText(currentExpression);
 }
 
 // 括号按钮点击处理
@@ -212,7 +233,7 @@ void MainWindow::parenthesisClicked()
     QPushButton *clickedButton = qobject_cast<QPushButton *>(sender());
     QString parenthesis = clickedButton->text();
 
-    if(currentExpression == "0" && parenthesis == "(")
+    if (currentExpression == "0")
     {
         currentExpression = "(";
     }
@@ -244,7 +265,18 @@ void MainWindow::backspaceClicked()
 // 百分号按钮点击处理
 void MainWindow::percentClicked()
 {
-    
+    if (currentExpression.isEmpty() || currentExpression == "0" || display->text() == "Error")
+    {
+        return;
+    }
+
+    QChar lastChar = currentExpression.back();
+    if (lastChar.isDigit() || lastChar == ')')
+    {
+        currentExpression += "%";
+        previewDisplay->setText(currentExpression);
+        equalClicked();
+    }
 }
 
 // 等号按钮点击处理
@@ -254,80 +286,149 @@ void MainWindow::equalClicked()
     qDebug() << "Current Expression:" << currentExpression;
     previewDisplay->setText(currentExpression);
 
-    // 计算表达式
     QString expr = currentExpression;
     expr.replace("×", "*").replace("÷", "/");
-    double calcResult = evaluateExpression(expr);
+    if (expr.contains('%'))
+    {
+        expr.replace(QRegularExpression("(\\d+(?:\\.\\d+)?)%"), "(\\1/100)");
+    }
+
+    QString postfix = convert2Postfix(expr);
+    double calcResult = calculatePostfix(postfix);
+    qDebug() << convert2Postfix(expr);
 
     display->setText("= " + QString::number(calcResult));
 }
 
-// 计算表达式
-double MainWindow::evaluateExpression(QString expr)
+int MainWindow::precedence(QChar op)
 {
-    // 简单的从左到右计算
-    QVector<double> numbers;
-    QVector<QChar> operators;
+    if (op == '+' || op == '-')
+        return 1;
+    if (op == '*' || op == '/')
+        return 2;
+    return 0;
+}
 
-    QString currentNumber;
-    for (int i = 0; i < expr.length(); ++i)
+QString MainWindow::convert2Postfix(QString infix)
+{
+    QString postfix;
+    QStack<QChar> stack;
+
+    for (int i = 0; i < infix.length(); ++i)
     {
-        QChar c = expr[i];
+        QChar c = infix[i];
 
         if (c.isDigit() || c == '.')
         {
-            currentNumber += c;
+            while (i < infix.length() && (infix[i].isDigit() || infix[i] == '.'))
+            {
+                postfix += infix[i];
+                ++i;
+            }
+            i--;
+            postfix += ' ';
         }
         else if (c == '+' || c == '-' || c == '*' || c == '/')
         {
-            if (!currentNumber.isEmpty())
+            postfix += ' ';
+            while (!stack.isEmpty() && precedence(stack.top()) >= precedence(c))
             {
-                numbers.append(currentNumber.toDouble());
-                currentNumber.clear();
+                postfix += stack.pop();
+                postfix += ' ';
             }
-            operators.append(c);
+            stack.push(c);
         }
-    }
-
-    // 添加最后一个数字
-    if (!currentNumber.isEmpty())
-    {
-        numbers.append(currentNumber.toDouble());
-    }
-
-    // 如果没有操作符，直接返回数字
-    if (operators.isEmpty())
-    {
-        return numbers.value(0, 0);
-    }
-
-    // 从左到右计算
-    double result = numbers[0];
-    for (int i = 0; i < operators.size(); ++i)
-    {
-        double nextNumber = numbers.value(i + 1, 0);
-
-        switch (operators[i].toLatin1())
+        else if (c == '(')
         {
-        case '+':
-            result += nextNumber;
-            break;
-        case '-':
-            result -= nextNumber;
-            break;
-        case '*':
-            result *= nextNumber;
-            break;
-        case '/':
-            if (nextNumber == 0.0)
+            stack.push(c);
+        }
+        else if (c == ')')
+        {
+            while (!stack.isEmpty() && stack.top() != '(')
             {
-                display->setText("Error");
-                return 0.0;
+                postfix += ' ';
+                postfix += stack.pop();
             }
-            result /= nextNumber;
-            break;
+            stack.pop(); // Remove '('
         }
     }
 
-    return result;
+    while (!stack.isEmpty())
+    {
+        postfix += ' ';
+        postfix += stack.pop();
+    }
+
+    return postfix;
+}
+
+double MainWindow::calculatePostfix(QString postfix)
+{
+    QStack<double> stack;
+
+    QStringList tokens = postfix.split(' ', Qt::SkipEmptyParts);
+    for (const QString &token : tokens)
+    {
+        if (token[0].isDigit()) // 如果是数字
+        {
+            // 尝试将token转换为数字
+            bool conversionOk;
+            double number = token.toDouble(&conversionOk);
+            if (conversionOk)
+            {
+                stack.push(number);
+            }
+            else
+            {
+                return 0; 
+            }
+        }
+        else if (token == "+" || token == "-" || token == "*" || token == "/") // 如果是操作符
+        {
+            if (stack.size() < 2)
+            {
+                return 0;
+            }
+            double right = stack.pop();
+            double left = stack.pop();
+            switch (token[0].toLatin1())
+            {
+            case '+':
+                stack.push(left + right);
+                break;
+            case '-':
+                stack.push(left - right);
+                break;
+            case '*':
+                stack.push(left * right);
+                break;
+            case '/':
+                if (right == 0)
+                {
+                    return 0;
+                }
+                stack.push(left / right);
+                break;
+            }
+        }
+    }
+
+    if (stack.size() != 1)
+    {
+        return 0;
+        display->setText("Error");
+    }
+    
+
+    return stack.pop();
+}
+
+void MainWindow::keyReleaseEvent(QKeyEvent *event)
+{
+    QString key = event->text();
+    qDebug() << "Key Released:" << key;
+    if (buttonMap.contains(key)){
+        buttonMap.value(key)->click();
+    }
+    
 }
